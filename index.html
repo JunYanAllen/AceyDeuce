@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>射龍門</title>
+  <style>
+    :root {
+      --felt: #1a472a;
+      --felt-dark: #133520;
+      --gold: #FFD700;
+      --card-bg: #FFFDF0;
+      --card-red: #CC0000;
+      --card-black: #1a1a1a;
+      --win: #27ae60;
+      --lose: #e74c3c;
+      --post: #e67e22;
+      --panel-bg: rgba(0,0,0,0.35);
+      --text: #f0f0f0;
+      --border: rgba(255,215,0,0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', '微軟正黑體', sans-serif;
+      background: var(--felt);
+      background-image: radial-gradient(ellipse at center, #1e5434 0%, #0f2e1a 100%);
+      min-height: 100vh;
+      color: var(--text);
+    }
+
+    header {
+      text-align: center;
+      padding: 20px 16px 10px;
+      border-bottom: 2px solid var(--border);
+      background: var(--felt-dark);
+    }
+
+    header h1 {
+      font-size: 2.4rem;
+      color: var(--gold);
+      letter-spacing: 0.15em;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    }
+
+    header p {
+      font-size: 0.85rem;
+      opacity: 0.7;
+      margin-top: 4px;
+    }
+
+    .pot-display {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 6px 24px;
+      background: rgba(0,0,0,0.4);
+      border: 2px solid var(--gold);
+      border-radius: 30px;
+      font-size: 1.2rem;
+      color: var(--gold);
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    section {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    section h2 {
+      font-size: 1.1rem;
+      color: var(--gold);
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    /* ── Buttons ── */
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      padding: 8px 18px;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    button:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
+    button:active:not(:disabled) { transform: translateY(0); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary { background: var(--gold); color: #1a1a1a; font-weight: bold; }
+    .btn-danger  { background: #c0392b; color: #fff; }
+    .btn-neutral { background: #555; color: #fff; }
+    .btn-success { background: var(--win); color: #fff; font-weight: bold; }
+    .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
+
+    /* ── Inputs ── */
+    input[type="text"], input[type="number"] {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 6px;
+      color: #fff;
+      padding: 7px 10px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]::placeholder, input[type="number"]::placeholder { color: rgba(255,255,255,0.4); }
+    input:focus { border-color: var(--gold); }
+
+    /* ── Setup Panel ── */
+    #setup-panel .add-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    #setup-panel .add-row input[type="text"]  { flex: 2; min-width: 120px; }
+    #setup-panel .add-row input[type="number"]{ flex: 1; min-width: 90px; }
+
+    .player-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .player-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+
+    .player-item .pname { flex: 1; font-weight: bold; }
+    .player-item .pchips { color: var(--gold); min-width: 70px; text-align: right; }
+
+    #setup-actions { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* ── Cards ── */
+    .card {
+      width: 80px;
+      height: 112px;
+      border-radius: 8px;
+      background: var(--card-bg);
+      border: 2px solid #bbb;
+      box-shadow: 3px 4px 10px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 5px;
+      font-family: Georgia, serif;
+      position: relative;
+      transition: transform 0.4s ease;
+      flex-shrink: 0;
+    }
+
+    .card.red  { color: var(--card-red); }
+    .card.black{ color: var(--card-black); }
+
+    .card-corner {
+      font-size: 0.75rem;
+      line-height: 1.1;
+      font-weight: bold;
+    }
+
+    .card-corner.br {
+      align-self: flex-end;
+      transform: rotate(180deg);
+    }
+
+    .card-suit-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.8rem;
+    }
+
+    .card-back {
+      background: #1a5276;
+      border-color: #154360;
+      background-image: repeating-linear-gradient(
+        45deg,
+        rgba(255,255,255,0.07) 0px,
+        rgba(255,255,255,0.07) 2px,
+        transparent 2px,
+        transparent 8px
+      );
+    }
+
+    .card-placeholder {
+      width: 80px;
+      height: 112px;
+      border-radius: 8px;
+      border: 2px dashed rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.04);
+      flex-shrink: 0;
+    }
+
+    /* flip animation */
+    .card-flip-wrap {
+      perspective: 600px;
+      width: 80px;
+      height: 112px;
+    }
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.5s ease;
+    }
+    .card-inner.flipped { transform: rotateY(180deg); }
+    .card-face, .card-back-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 8px;
+    }
+    .card-back-face {
+      background: #1a5276;
+      border: 2px solid #154360;
+      background-image: repeating-linear-gradient(
+        45deg,
+        rgba(255,255,255,0.07) 0px,
+        rgba(255,255,255,0.07) 2px,
+        transparent 2px,
+        transparent 8px
+      );
+    }
+    .card-face { transform: rotateY(180deg); }
+
+    /* ── Game Panel ── */
+    #game-panel .current-player-label {
+      text-align: center;
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-bottom: 14px;
+      color: var(--gold);
+    }
+
+    .gate-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      margin: 10px 0;
+    }
+
+    .gate-vs {
+      font-size: 1.5rem;
+      color: rgba(255,255,255,0.4);
+      font-weight: bold;
+    }
+
+    .spread-badge {
+      text-align: center;
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.6);
+      margin-top: 6px;
+    }
+
+    .spread-badge .spread-val {
+      color: var(--gold);
+      font-weight: bold;
+    }
+
+    .warning-banner {
+      text-align: center;
+      padding: 6px 12px;
+      background: rgba(230,126,34,0.25);
+      border: 1px solid var(--post);
+      border-radius: 8px;
+      color: #f0a060;
+      font-size: 0.9rem;
+      margin: 8px 0;
+    }
+
+    .bet-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin: 14px 0;
+      flex-wrap: wrap;
+    }
+
+    .bet-area label { font-size: 0.9rem; opacity: 0.8; }
+
+    #bet-input { width: 110px; text-align: center; font-size: 1rem; }
+
+    .third-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .third-label {
+      font-size: 0.85rem;
+      opacity: 0.6;
+    }
+
+    .result-banner {
+      text-align: center;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 1.4rem;
+      font-weight: bold;
+      animation: fadeInScale 0.3s ease forwards;
+      margin: 10px 0;
+    }
+
+    .result-win  { background: rgba(39,174,96,0.3); border: 2px solid var(--win); color: #2ecc71; }
+    .result-lose { background: rgba(231,76,60,0.3);  border: 2px solid var(--lose); color: #e74c3c; }
+    .result-post { background: rgba(230,126,34,0.3); border: 2px solid var(--post); color: #f39c12; }
+
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.7); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .game-actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    /* ── Scoreboard ── */
+    .score-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .score-table th {
+      color: var(--gold);
+      text-align: left;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .score-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .score-table tr.current-player-row td { background: rgba(255,215,0,0.1); }
+    .score-table tr.broke td { opacity: 0.45; }
+
+    .chip-positive { color: #2ecc71; }
+    .chip-negative { color: #e74c3c; }
+
+    @keyframes flash {
+      0%   { background: rgba(255,215,0,0.35); }
+      100% { background: transparent; }
+    }
+
+    .flash-row td { animation: flash 1s ease forwards; }
+
+    /* ── History ── */
+    #history-list {
+      max-height: 280px;
+      overflow-y: auto;
+      font-size: 0.82rem;
+    }
+
+    .history-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      background: rgba(255,255,255,0.05);
+      flex-wrap: wrap;
+    }
+
+    .history-row .hr-round  { color: rgba(255,255,255,0.45); min-width: 32px; }
+    .history-row .hr-player { font-weight: bold; min-width: 70px; }
+    .history-row .hr-cards  { font-family: Georgia, serif; }
+    .history-row .hr-bet    { opacity: 0.7; }
+    .history-row .hr-result { font-weight: bold; min-width: 70px; text-align: right; }
+
+    .hr-win  { color: #2ecc71; }
+    .hr-lose { color: #e74c3c; }
+    .hr-post { color: #f39c12; }
+
+    /* ── Misc ── */
+    .hidden { display: none !important; }
+
+    .pot-seed-row {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    #round-label {
+      text-align: center;
+      font-size: 0.82rem;
+      opacity: 0.5;
+      margin-bottom: 8px;
+    }
+
+    .inline-hint {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.45);
+    }
+
+    @media (max-width: 500px) {
+      header h1 { font-size: 1.8rem; }
+      .card { width: 68px; height: 96px; }
+      .card-suit-center { font-size: 1.4rem; }
+      .card-flip-wrap { width: 68px; height: 96px; }
+      .card-placeholder { width: 68px; height: 96px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🐉 射龍門</h1>
+  <p>Dragon Gate · Acey-Deucey</p>
+  <div class="pot-display">公池 (Pot)：<span id="pot-value">0</span> 籌碼</div>
+</header>
+
+<div class="container">
+
+  <!-- ── Setup Panel ── -->
+  <section id="setup-panel">
+    <h2>玩家設定</h2>
+    <div class="add-row">
+      <input type="text"   id="new-name"  placeholder="玩家名稱" maxlength="12">
+      <input type="number" id="new-chips" placeholder="起始籌碼" value="1000" min="1">
+      <button class="btn-primary" onclick="addPlayer()">新增玩家</button>
+    </div>
+    <div class="player-list" id="player-list"></div>
+    <div id="setup-actions">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <label style="font-size:0.85rem">公池起始：</label>
+        <input type="number" id="pot-seed" value="0" min="0" style="width:90px">
+        <span class="inline-hint">（或由玩家平均攤）</span>
+        <button class="btn-neutral btn-sm" onclick="splitPotSeed()">平均攤入公池</button>
+      </div>
+      <button class="btn-success" id="start-btn" onclick="startGame()" disabled>▶ 開始遊戲</button>
+    </div>
+  </section>
+
+  <!-- ── Game Panel ── -->
+  <section id="game-panel" class="hidden">
+    <div id="round-label"></div>
+    <div class="current-player-label" id="current-player-label"></div>
+
+    <div class="gate-area" id="gate-area">
+      <div class="card-placeholder" id="post1-slot"></div>
+      <div class="gate-vs">⚡</div>
+      <div class="card-placeholder" id="post2-slot"></div>
+    </div>
+
+    <div class="spread-badge hidden" id="spread-badge">
+      點數差距 (Spread)：<span class="spread-val" id="spread-val">—</span>
+    </div>
+
+    <div class="warning-banner hidden" id="no-gap-warn">
+      ⚠ 龍門緊閉！兩張門柱相鄰或相同，射中機率極低。可選擇押注 0 跳過。
+    </div>
+
+    <div class="bet-area" id="bet-area">
+      <label>押注：</label>
+      <input type="number" id="bet-input" value="50" min="0" placeholder="押注金額">
+      <span class="inline-hint" id="bet-hint"></span>
+      <button class="btn-primary" id="deal-third-btn" onclick="dealThird()">🎴 發第三張牌</button>
+    </div>
+
+    <div class="third-area">
+      <div class="third-label hidden" id="third-label">第三張牌</div>
+      <div class="card-flip-wrap hidden" id="third-flip-wrap">
+        <div class="card-inner" id="third-card-inner">
+          <div class="card-back-face"></div>
+          <div class="card-face" id="third-card-face"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-banner hidden" id="result-banner"></div>
+
+    <div class="game-actions">
+      <button class="btn-neutral hidden" id="next-btn" onclick="nextPlayer()">下一位玩家 →</button>
+      <button class="btn-danger"  id="end-btn"  onclick="endGame()">結束遊戲</button>
+    </div>
+  </section>
+
+  <!-- ── Scoreboard ── -->
+  <section id="scoreboard-panel" class="hidden">
+    <h2>計分板</h2>
+    <table class="score-table" id="score-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>玩家</th>
+          <th>籌碼</th>
+          <th>本輪增減</th>
+          <th>狀態</th>
+        </tr>
+      </thead>
+      <tbody id="score-tbody"></tbody>
+    </table>
+  </section>
+
+  <!-- ── History ── -->
+  <section id="history-panel" class="hidden">
+    <h2>歷史記錄</h2>
+    <div id="history-list"></div>
+  </section>
+
+</div>
+
+<script>
+// ──────────────────────────────────────────────
+// Data
+// ──────────────────────────────────────────────
+const SUITS  = ['♠','♥','♦','♣'];
+const RANKS  = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+const VALUES = {2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,J:11,Q:12,K:13,A:14};
+
+const state = {
+  players: [],
+  pot: 0,
+  deck: [],
+  currentIdx: 0,
+  roundNum: 1,
+  phase: 'setup',   // setup | betting | reveal | result
+  hand: { post1: null, post2: null, third: null, bet: 0, outcome: null, delta: 0 },
+  history: [],
+  nextId: 1,
+};
+
+// ──────────────────────────────────────────────
+// Card engine
+// ──────────────────────────────────────────────
+function buildDeck() {
+  return SUITS.flatMap(s => RANKS.map(r => ({ suit: s, rank: r, value: VALUES[r] })));
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function dealCard() {
+  if (state.deck.length < 5) state.deck = shuffle(buildDeck());
+  return state.deck.pop();
+}
+
+function cardHTML(card) {
+  const isRed = card.suit === '♥' || card.suit === '♦';
+  return `
+    <div class="card ${isRed ? 'red' : 'black'}">
+      <div class="card-corner">${card.rank}<br>${card.suit}</div>
+      <div class="card-suit-center">${card.suit}</div>
+      <div class="card-corner br">${card.rank}<br>${card.suit}</div>
+    </div>`;
+}
+
+// ──────────────────────────────────────────────
+// Player management (setup phase)
+// ──────────────────────────────────────────────
+function addPlayer() {
+  const nameEl  = document.getElementById('new-name');
+  const chipsEl = document.getElementById('new-chips');
+  const name  = nameEl.value.trim() || `玩家${state.nextId}`;
+  const chips = Math.max(1, parseInt(chipsEl.value) || 1000);
+
+  if (state.players.length >= 8) { alert('最多 8 位玩家'); return; }
+
+  state.players.push({ id: state.nextId++, name, chips, delta: 0, active: true });
+  nameEl.value = '';
+  renderSetup();
+}
+
+function removePlayer(id) {
+  state.players = state.players.filter(p => p.id !== id);
+  renderSetup();
+}
+
+function splitPotSeed() {
+  if (!state.players.length) return;
+  const seed = Math.max(0, parseInt(document.getElementById('pot-seed').value) || 0);
+  if (!seed) return;
+  const share = Math.floor(seed / state.players.length);
+  state.players.forEach(p => { p.chips -= share; });
+  state.pot += share * state.players.length;
+  document.getElementById('pot-seed').value = 0;
+  renderSetup();
+  renderPot();
+}
+
+// ──────────────────────────────────────────────
+// Game flow
+// ──────────────────────────────────────────────
+function startGame() {
+  const seedVal = parseInt(document.getElementById('pot-seed').value) || 0;
+  state.pot += Math.max(0, seedVal);
+
+  state.deck = shuffle(buildDeck());
+  state.currentIdx = 0;
+  state.roundNum = 1;
+  state.phase = 'betting';
+  state.history = [];
+
+  document.getElementById('setup-panel').classList.add('hidden');
+  document.getElementById('game-panel').classList.remove('hidden');
+  document.getElementById('scoreboard-panel').classList.remove('hidden');
+  document.getElementById('history-panel').classList.remove('hidden');
+
+  renderPot();
+  startRound();
+}
+
+function currentPlayer() {
+  return state.players[state.currentIdx];
+}
+
+function startRound() {
+  const p = currentPlayer();
+  state.phase = 'betting';
+
+  const post1 = dealCard();
+  const post2 = dealCard();
+  state.hand = { post1, post2, third: null, bet: 0, outcome: null, delta: 0 };
+
+  // Update labels
+  const totalPlayers = state.players.length;
+  const roundOf = Math.floor(state.currentIdx / totalPlayers);
+  document.getElementById('round-label').textContent =
+    `第 ${state.roundNum} 輪 · ${state.currentIdx + 1} / ${totalPlayers} 位`;
+  document.getElementById('current-player-label').textContent =
+    `🎯 ${p.name} 的回合`;
+
+  // Show gate posts
+  document.getElementById('post1-slot').outerHTML = `<div id="post1-slot">${cardHTML(post1)}</div>`;
+  document.getElementById('post2-slot').outerHTML = `<div id="post2-slot">${cardHTML(post2)}</div>`;
+
+  // Spread
+  const lo = Math.min(post1.value, post2.value);
+  const hi = Math.max(post1.value, post2.value);
+  const spread = hi - lo;
+  document.getElementById('spread-badge').classList.remove('hidden');
+  document.getElementById('spread-val').textContent = spread;
+
+  // Gap warning
+  if (spread <= 1) {
+    document.getElementById('no-gap-warn').classList.remove('hidden');
+  } else {
+    document.getElementById('no-gap-warn').classList.add('hidden');
+  }
+
+  // Bet area
+  document.getElementById('bet-area').classList.remove('hidden');
+  const maxBet = Math.min(p.chips, state.pot);
+  document.getElementById('bet-input').value = Math.min(50, maxBet);
+  document.getElementById('bet-input').max = maxBet;
+  document.getElementById('bet-hint').textContent =
+    `（最多 ${maxBet}，持有 ${p.chips}）`;
+
+  // Third card area - reset
+  document.getElementById('third-flip-wrap').classList.add('hidden');
+  document.getElementById('third-label').classList.add('hidden');
+  document.getElementById('third-card-inner').classList.remove('flipped');
+
+  // Result
+  document.getElementById('result-banner').classList.add('hidden');
+  document.getElementById('next-btn').classList.add('hidden');
+  document.getElementById('deal-third-btn').disabled = false;
+
+  renderScoreboard();
+}
+
+function dealThird() {
+  const p = currentPlayer();
+  const bet = Math.max(0, parseInt(document.getElementById('bet-input').value) || 0);
+
+  if (bet > p.chips) { alert('押注超過持有籌碼！'); return; }
+  if (bet > state.pot && bet > 0) {
+    alert(`押注超過公池（${state.pot}）！最多押 ${state.pot}`); return;
+  }
+
+  state.hand.bet = bet;
+  document.getElementById('deal-third-btn').disabled = true;
+  document.getElementById('bet-area').classList.add('hidden');
+
+  const third = dealCard();
+  state.hand.third = third;
+  state.phase = 'reveal';
+
+  // Show card face-down then flip
+  const face = document.getElementById('third-card-face');
+  face.innerHTML = cardHTML(third);
+
+  document.getElementById('third-label').classList.remove('hidden');
+  document.getElementById('third-flip-wrap').classList.remove('hidden');
+
+  setTimeout(() => {
+    document.getElementById('third-card-inner').classList.add('flipped');
+    setTimeout(() => resolveOutcome(), 500);
+  }, 300);
+}
+
+function resolveOutcome() {
+  const p = currentPlayer();
+  const { post1, post2, third, bet } = state.hand;
+
+  const lo = Math.min(post1.value, post2.value);
+  const hi = Math.max(post1.value, post2.value);
+
+  let outcome, delta, potDelta;
+
+  if (third.value === lo || third.value === hi) {
+    // Hit the post — 撞柱
+    outcome = 'post';
+    const penalty = bet * 2;
+    delta = -penalty;
+    potDelta = penalty;
+  } else if (third.value > lo && third.value < hi) {
+    // Win
+    outcome = 'win';
+    const actualWin = Math.min(bet, state.pot);
+    delta = actualWin;
+    potDelta = -actualWin;
+  } else {
+    // Lose
+    outcome = 'lose';
+    delta = -bet;
+    potDelta = bet;
+  }
+
+  p.chips += delta;
+  p.delta = delta;
+  state.pot = Math.max(0, state.pot + potDelta);
+  state.hand.outcome = outcome;
+  state.hand.delta = delta;
+  state.phase = 'result';
+
+  // History
+  state.history.unshift({
+    roundNum: state.roundNum,
+    playerName: p.name,
+    post1: { ...post1 },
+    post2: { ...post2 },
+    third: { ...third },
+    bet,
+    outcome,
+    delta,
+    potAfter: state.pot,
+  });
+
+  // Show result banner
+  const banner = document.getElementById('result-banner');
+  banner.classList.remove('hidden', 'result-win', 'result-lose', 'result-post');
+  if (outcome === 'win') {
+    banner.className = 'result-banner result-win';
+    banner.textContent = `🎉 射中龍門！贏得 +${delta} 籌碼`;
+  } else if (outcome === 'lose') {
+    banner.className = 'result-banner result-lose';
+    banner.textContent = `😔 未射中，損失 ${delta} 籌碼`;
+  } else {
+    banner.className = 'result-banner result-post';
+    banner.textContent = `💥 撞柱！罰款 ${-delta} 籌碼入公池`;
+  }
+
+  renderPot();
+  renderScoreboard(true);
+  renderHistory();
+
+  document.getElementById('next-btn').classList.remove('hidden');
+}
+
+function nextPlayer() {
+  state.players[state.currentIdx].delta = 0;
+  state.currentIdx++;
+
+  if (state.currentIdx >= state.players.length) {
+    state.currentIdx = 0;
+    state.roundNum++;
+  }
+
+  // Skip broke players (0 chips and pot is 0 too — nothing to do)
+  let tries = 0;
+  while (currentPlayer().chips <= 0 && tries < state.players.length) {
+    state.currentIdx = (state.currentIdx + 1) % state.players.length;
+    if (state.currentIdx === 0) state.roundNum++;
+    tries++;
+  }
+
+  const activePlayers = state.players.filter(p => p.chips > 0);
+  if (activePlayers.length <= 1) {
+    endGame();
+    return;
+  }
+
+  startRound();
+}
+
+function endGame() {
+  state.phase = 'setup';
+  const sorted = [...state.players].sort((a, b) => b.chips - a.chips);
+  let msg = '🏆 遊戲結束！最終排名：\n\n';
+  sorted.forEach((p, i) => {
+    msg += `${i + 1}. ${p.name}：${p.chips} 籌碼\n`;
+  });
+  msg += `\n公池剩餘：${state.pot} 籌碼`;
+  alert(msg);
+
+  // Reset UI
+  document.getElementById('game-panel').classList.add('hidden');
+  document.getElementById('scoreboard-panel').classList.add('hidden');
+  document.getElementById('history-panel').classList.add('hidden');
+  document.getElementById('setup-panel').classList.remove('hidden');
+
+  // Reset state
+  state.players.forEach(p => { p.delta = 0; });
+  state.pot = 0;
+  state.history = [];
+  renderSetup();
+  renderPot();
+}
+
+// ──────────────────────────────────────────────
+// Render
+// ──────────────────────────────────────────────
+function renderPot() {
+  document.getElementById('pot-value').textContent = state.pot.toLocaleString();
+}
+
+function renderSetup() {
+  const list = document.getElementById('player-list');
+  list.innerHTML = state.players.map(p => `
+    <div class="player-item">
+      <span class="pname">${p.name}</span>
+      <span class="pchips">💰 ${p.chips.toLocaleString()}</span>
+      <button class="btn-danger btn-sm" onclick="removePlayer(${p.id})">移除</button>
+    </div>
+  `).join('');
+
+  document.getElementById('start-btn').disabled = state.players.length < 2;
+}
+
+function renderScoreboard(flash = false) {
+  const tbody = document.getElementById('score-tbody');
+  const sorted = [...state.players].map((p, i) => ({ ...p, origIdx: i }))
+                                   .sort((a, b) => b.chips - a.chips);
+
+  tbody.innerHTML = sorted.map((p, rank) => {
+    const isCurrent = p.id === currentPlayer()?.id;
+    const isBroke   = p.chips <= 0;
+    const deltaStr  = p.delta > 0
+      ? `<span class="chip-positive">+${p.delta}</span>`
+      : p.delta < 0
+      ? `<span class="chip-negative">${p.delta}</span>`
+      : '—';
+
+    const rowClass = [
+      isCurrent ? 'current-player-row' : '',
+      isBroke   ? 'broke' : '',
+      (flash && p.delta !== 0) ? 'flash-row' : '',
+    ].filter(Boolean).join(' ');
+
+    const status = isBroke ? '💸 破產' : isCurrent ? '🎯 當前' : '✅';
+
+    return `<tr class="${rowClass}" data-pid="${p.id}">
+      <td>${rank + 1}</td>
+      <td>${p.name}</td>
+      <td>${p.chips.toLocaleString()}</td>
+      <td>${deltaStr}</td>
+      <td>${status}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const h = state.history[0];
+  if (!h) return;
+
+  const isRed1 = h.post1.suit === '♥' || h.post1.suit === '♦';
+  const isRed2 = h.post2.suit === '♥' || h.post2.suit === '♦';
+  const isRed3 = h.third.suit === '♥' || h.third.suit === '♦';
+
+  const c1 = `<span style="color:${isRed1?'#e74c3c':'#ccc'}">${h.post1.rank}${h.post1.suit}</span>`;
+  const c2 = `<span style="color:${isRed2?'#e74c3c':'#ccc'}">${h.post2.rank}${h.post2.suit}</span>`;
+  const c3 = `<span style="color:${isRed3?'#e74c3c':'#ccc'}">${h.third.rank}${h.third.suit}</span>`;
+
+  const resultLabel = h.outcome === 'win'  ? `<span class="hr-win">射中 +${h.delta}</span>`
+                    : h.outcome === 'lose' ? `<span class="hr-lose">未中 ${h.delta}</span>`
+                    : `<span class="hr-post">撞柱 ${h.delta}</span>`;
+
+  const row = document.createElement('div');
+  row.className = 'history-row';
+  row.innerHTML = `
+    <span class="hr-round">R${h.roundNum}</span>
+    <span class="hr-player">${h.playerName}</span>
+    <span class="hr-cards">${c1} ⚡ ${c2} → ${c3}</span>
+    <span class="hr-bet">押 ${h.bet}</span>
+    <span class="hr-result">${resultLabel}</span>
+    <span style="opacity:0.4;font-size:0.75rem">池:${h.potAfter}</span>
+  `;
+
+  list.prepend(row);
+}
+
+// ──────────────────────────────────────────────
+// Boot
+// ──────────────────────────────────────────────
+document.getElementById('new-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addPlayer();
+});
+
+document.getElementById('bet-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') dealThird();
+});
+
+renderSetup();
+renderPot();
+</script>
+</body>
+</html>
