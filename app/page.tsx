@@ -45,6 +45,12 @@ export default function LobbyPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: roomName, playerName: createName, chips, minBet }),
       });
+      // Guard against non-JSON responses (e.g. Vercel error pages)
+      const contentType = res.headers.get('content-type') ?? '';
+      if (!contentType.includes('application/json')) {
+        alert(`伺服器錯誤 (HTTP ${res.status})，請確認 Redis 環境變數已正確設定`);
+        return;
+      }
       const data = await res.json();
       if (data.roomId) {
         localStorage.setItem(`player_${data.roomId}`, data.playerId);
@@ -52,6 +58,9 @@ export default function LobbyPage() {
       } else {
         alert(data.error || '建立失敗');
       }
+    } catch (e) {
+      alert('網路錯誤，請稍後再試');
+      console.error(e);
     } finally {
       setCreating(false);
     }
