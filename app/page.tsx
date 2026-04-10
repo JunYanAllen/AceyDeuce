@@ -14,6 +14,7 @@ export default function LobbyPage() {
   const [createName, setCreateName] = useState('');
   const [chips, setChips] = useState(1000);
   const [minBet, setMinBet] = useState(10);
+  const [potPerPlayer, setPotPerPlayer] = useState(100);
   const [creating, setCreating] = useState(false);
 
   // Join form
@@ -43,7 +44,7 @@ export default function LobbyPage() {
       const res = await fetch('/api/rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: roomName, playerName: createName, chips, minBet }),
+        body: JSON.stringify({ name: roomName, playerName: createName, chips, minBet, potPerPlayer }),
       });
       // Guard against non-JSON responses (e.g. Vercel error pages)
       const contentType = res.headers.get('content-type') ?? '';
@@ -114,14 +115,22 @@ export default function LobbyPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>起始籌碼</label>
+              <label className={labelCls}>起始籌碼（每人）</label>
               <input type="number" className={inputCls} value={chips} min={100}
                 onChange={(e) => setChips(Number(e.target.value))} />
             </div>
             <div>
-              <label className={labelCls}>最低押注 (棄局罰款)</label>
+              <label className={labelCls}>最低押注 / 棄局罰款</label>
               <input type="number" className={inputCls} value={minBet} min={1}
                 onChange={(e) => setMinBet(Number(e.target.value))} />
+            </div>
+            <div className="col-span-2">
+              <label className={labelCls}>
+                初始公池（每人貢獻，0 = 不貢獻）
+                <span className="ml-1 text-white/30">— 開局時從每人籌碼扣除</span>
+              </label>
+              <input type="number" className={inputCls} value={potPerPlayer} min={0}
+                onChange={(e) => setPotPerPlayer(Number(e.target.value))} />
             </div>
           </div>
           <button

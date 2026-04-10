@@ -98,7 +98,8 @@ export default function RoomPage() {
   const isHost = room.hostId === myId;
   const amInRoom = room.players.some((p) => p.id === myId);
   const me = room.players.find((p) => p.id === myId);
-  const maxBet = me ? Math.min(me.chips, room.pot) : 0;
+  // Players can bet up to their chips; winning is naturally capped at pot in resolveOutcome
+  const maxBet = me ? me.chips : 0;
   const spread = room.hand ? Math.abs(room.hand.pillar1.value - room.hand.pillar2.value) : 0;
 
   // ── Helpers ──────────────────────────────────────────────────────
@@ -217,6 +218,15 @@ export default function RoomPage() {
             {/* ── Betting controls (my turn) */}
             {room.phase === 'betting' && isMyTurn && (
               <div className="space-y-3">
+                {room.pot > 0 ? (
+                  <p className="text-center text-white/40 text-xs">
+                    射中最多贏 <span className="text-yellow-300 font-bold">{room.pot}</span> 籌碼（公池上限）
+                  </p>
+                ) : (
+                  <p className="text-center text-orange-300/70 text-xs">
+                    ⚠ 公池為 0，射中不得彩金。押注仍有效（輸了會充入公池）
+                  </p>
+                )}
                 <div className="flex items-center gap-3 justify-center flex-wrap">
                   <label className="text-white/60 text-sm">押注金額</label>
                   <input
@@ -229,7 +239,7 @@ export default function RoomPage() {
                       setBetInput(Math.max(0, Math.min(maxBet, Number(e.target.value))))
                     }
                   />
-                  <span className="text-white/30 text-xs">最多 {maxBet}</span>
+                  <span className="text-white/30 text-xs">持有 {maxBet}</span>
                 </div>
 
                 {/* Quick-pick chips */}

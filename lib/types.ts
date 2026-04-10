@@ -58,6 +58,8 @@ export interface Room {
   history: HistoryEntry[];
   minBet: number;
   maxPlayers: number;
+  /** Chips each player contributes to the pot when the game starts (0 = none) */
+  potPerPlayer: number;
   createdAt: number;
 }
 
