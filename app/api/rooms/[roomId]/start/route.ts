@@ -16,6 +16,18 @@ export async function POST(
   if (room.players.length < 2)
     return NextResponse.json({ error: 'Need at least 2 players' }, { status: 400 });
 
+  // Seed the pot — each player contributes potPerPlayer chips (capped at what they own)
+  const contribution = room.potPerPlayer ?? 0;
+  if (contribution > 0) {
+    let total = 0;
+    for (const p of room.players) {
+      const paid = Math.min(contribution, p.chips);
+      p.chips -= paid;
+      total += paid;
+    }
+    room.pot += total;
+  }
+
   let deck = room.deck;
   const [p1, deck1] = popCard(deck);
   const [p2, deck2] = popCard(deck1);

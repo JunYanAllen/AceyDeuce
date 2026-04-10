@@ -27,7 +27,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, playerName, chips = 1000, minBet = 10, maxPlayers = 8 } = body;
+    const { name, playerName, chips = 1000, minBet = 10, maxPlayers = 8, potPerPlayer = 100 } = body;
 
     if (!name?.trim() || !playerName?.trim()) {
       return NextResponse.json({ error: 'name and playerName are required' }, { status: 400 });
@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
       history: [],
       minBet: Math.max(1, Number(minBet)),
       maxPlayers: Math.min(8, Math.max(2, Number(maxPlayers))),
+      potPerPlayer: Math.max(0, Number(potPerPlayer)),
       createdAt: Date.now(),
     };
 

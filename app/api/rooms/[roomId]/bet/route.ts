@@ -19,8 +19,6 @@ export async function POST(
   const betAmount = Math.max(0, Math.floor(Number(bet)));
   if (betAmount > current.chips)
     return NextResponse.json({ error: 'Insufficient chips' }, { status: 400 });
-  if (betAmount > room.pot && betAmount > 0)
-    return NextResponse.json({ error: `Bet exceeds pot (${room.pot})` }, { status: 400 });
 
   const { pillar1, pillar2 } = room.hand!;
   const [middleCard, newDeck] = popCard(room.deck);
